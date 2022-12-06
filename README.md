@@ -26,7 +26,10 @@ python lottery.py --image ##.jpg
 ```
 可以使用的参数如下：
 ```bash
-usage: lottery.py [-h] [--detector DETECTOR] [--recognizer RECOGNIZER] [--detect_conf_thres DETECT_CONF_THRES] [--detect_iou_thres DETECT_IOU_THRES] [--cert_ CERT_] [--timeout TIMEOUT] [--cuda] [--image IMAGE]
+usage: lottery.py [-h] [--detector DETECTOR] [--recognizer RECOGNIZER] [--detect_conf_thres DETECT_CONF_THRES] [--detect_iou_thres DETECT_IOU_THRES] [--cert_ CERT_] [--timeout TIMEOUT] [--cuda] [--recognition_only] image
+
+positional arguments:
+  image                 image with lottery in it
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -38,9 +41,9 @@ optional arguments:
   --detect_iou_thres DETECT_IOU_THRES
                         detection iou threshold
   --cert_ CERT_         API infomation
-  --timeout TIMEOUT     timeout for waiting response.
+  --timeout TIMEOUT     timeout for waiting response
   --cuda                use cuda or cpu
-  --image IMAGE         image with lottery in it
+  --recognition_only    return recognition results rather than checked results
 ```
 
 **脚本内使用**

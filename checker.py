@@ -30,12 +30,12 @@ class Checker:
     ):
         p = Path(filename)
         if not p.is_file():
-            raise FileNotFoundError()
+            raise FileNotFoundError(f"File {str(p.absolute())} not found.")
         p = str(p.absolute())
         with open(p, "r") as f:
             contents = f.readlines()[: 3]
         if len(contents) < 3:
-            raise MissingInfoException()
+            raise MissingInfoException(f"File {p} is not complete.")
         url, app_id, app_secret = [l.strip() for l in contents]
         return Checker(url, app_id, app_secret, timeout)
 
@@ -52,13 +52,13 @@ class Checker:
             }
             r = requests.get(self.url, params=payload, headers=self.headers, timeout=self.timeout)
             if  r.status_code != requests.codes.ok:
-                raise requests.RequestException(f"Request failed with code: {r.status_code}")
+                raise requests.RequestException(f"网络请求出错，code: {r.status_code}，请检查网络连接。")
             js = r.json()
             if js["code"] != 1:
                 raise requests.RequestException(f"没有查询到期号为{issue}的彩票开奖信息，请确认是否已开奖。")
             winning = js["data"]["openCode"]
             if not winning:
-                raise MissingInfoException()
+                raise MissingInfoException("接口返回数据中未解析到开奖号码。")
             winning = winning_process(winning, code)
             self.saved[(code, issue)] = winning
         return winning

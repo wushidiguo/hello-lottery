@@ -35,8 +35,6 @@ class Lottery:
         self.init_recognizer()
         self.init_checker()
 
-        self.last_result = None
-
     def init_detector(self):
         self.detector = Detector(self.detector_, self.detect_conf_thres, self.detect_iou_thres, self.device)
 
@@ -46,44 +44,65 @@ class Lottery:
     def init_checker(self):
         self.checker = Checker.from_file(self.cert_, timeout=self.timeout)
 
-    def __call__(self, img):
+    def imread(self, img):
         p = Path(img)
         if not p.is_file():
             raise FileNotFoundError()
         p = str(p.absolute())
-        img0 = cv2.imread(p)  # BGR
-        assert img0 is not None, 'Cannot read image ' + str(p)
+        img = imread(p)  # BGR
+        assert img is not None, 'Cannot read image ' + str(p)
+        return img
 
-        detection = self.detector(img0)
+    def detect(self, img):
+        detection = self.detector(img)
         if not detection:
-            return
+            return 
+        code, issue, numbers = detection
+        return code, issue, numbers
 
-        code, issue_, numbers_ = detection
+    def recognize(self, img, code, issue, numbers, result_process=True):
+        issue = crop(img, issue)[0]
+        numbers = sort_box(numbers)
+        numbers = crop(img, numbers)
 
-        issue = crop(img0, issue_)[0]
-        numbers_ = sort_box(numbers_)
-        numbers_ = crop(img0, numbers_)
+        numbers.append(issue)
 
-        numbers_.append(issue)
-
-        recognition = self.recognizer(numbers_)
+        recognition = self.recognizer(numbers)
         if not recognition:
             return
-        
+
         issue, _ = recognition.pop()
         numbers = recognition
 
         numbers = [num[0] for num in numbers]
 
-        numbers = number_process(numbers, code)
+        if not result_process:
+            return code, issue, numbers
         
+        numbers = number_process(numbers, code)
         issue = issue_process(issue)
 
+        return code, issue, numbers
+        
+    def check(self, code, issue, numbers):
         hits, winning = self.checker(code, issue, numbers)
 
-        self.last_result = code, issue, winning, numbers, hits
+        return code, issue, winning, numbers, hits
 
-        return self.last_result
+    def __call__(self, img, recognition_only=False):
+        img = self.imread(img)
+        detection = self.detect(img)
+        if not detection:
+            return
+
+        recognition = self.recognize(img, *detection, result_process=True)
+        if not recognition:
+            return
+
+        if recognition_only:
+            return recognition
+
+        return self.check(*recognition)
 
 
 if __name__ == "__main__":
@@ -93,9 +112,10 @@ if __name__ == "__main__":
     parser.add_argument("--detect_conf_thres", type=float, default=0.25, help="detection confidence threshold")
     parser.add_argument("--detect_iou_thres", type=float, default=0.45, help="detection iou threshold")
     parser.add_argument("--cert_", type=str, default="./cert_.txt", help="API infomation")
-    parser.add_argument("--timeout", type=int, default=5, help="timeout for waiting response.")
+    parser.add_argument("--timeout", type=int, default=5, help="timeout for waiting response")
     parser.add_argument("--cuda", action="store_true", help="use cuda or cpu")
-    parser.add_argument("--image", type=str, help="image with lottery in it")
+    parser.add_argument("--recognition_only", action="store_true", help="return recognition results rather than checked results")
+    parser.add_argument("image", type=str, help="image with lottery in it")
 
     opt = parser.parse_args()
 
@@ -111,11 +131,11 @@ if __name__ == "__main__":
 
     assert opt.image, "Please specify an image containing lottery."
 
-    result = l(opt.image)
+    result = l(opt.image, opt.recognition_only)
     if not result:
         print("Sorry, something is wrong. You may try again.")
     else:
-        pprint(*result)
+        print(*result) if opt.recognition_only else pprint(*result)
         
     
 

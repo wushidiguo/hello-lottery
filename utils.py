@@ -1,12 +1,15 @@
 import math
 import re
 import logging
+from dataclasses import dataclass
 
 from natsort import natsort_key
 import cv2
 import numpy as np
 import torch
 from torchvision import transforms
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 
 log = logging.getLogger(__name__)
 
@@ -199,7 +202,7 @@ def number_process(numbers, code):
 
 class MissingInfoException(Exception):
     def __init__(self, *args):
-        super().__init__(args)
+        super().__init__(*args)
 
 
 def issue_process(issue_string):
@@ -318,5 +321,186 @@ def pprint(code, issue, winning, numbers, hits):
                 print(f"(前区拖)中{len(hit[1])}")
                 print(f"(后区胆)中{len(hit[2])}")
                 print(f"(后区拖)中{len(hit[3])}")
+
+
+class Result:
+    '''
+    要允许用户修改识别结果，就要有一个对应的数据结构作为“后台数据”和“前台表格”的桥梁。
+    因为要达到的效果是不同彩票、不同玩法显示结果的格式不同，
+    导致人为修改数据时的处理很不简洁，但暂时没有想到更好的方法。
+    '''
+    def __init__(self, code: str, issue: str, game_type: str, numbers: list, winning: tuple = None, hits: list = None):
+        self.code = code
+        self.issue = issue
+        self.game_type = game_type
+        self.numbers = numbers
+        self.winning = winning
+        self.hits = hits
+        self.fixed_headers = ["彩票类型", "开奖期", "开奖号码", "玩法"]
+        self.fixed_row = len(self.fixed_headers)
+
+    @classmethod
+    def fromTuple(self, t):
+        if len(t) == 3:
+            code, issue, numbers_ = t
+            game_type = numbers_["game_type"]
+            numbers = numbers_["numbers"]
+            return Result(code, issue, game_type, numbers)
+        else:
+            code, issue, winning, numbers_, hits = t
+            game_type = numbers_["game_type"]
+            numbers = numbers_["numbers"]
+            return Result(code, issue, game_type, numbers, winning, hits)
+
+    def toTuple(self):
+        return self.code, self.issue, {"code": self.code, "game_type": self.game_type, "numbers": self.numbers}
+
+    def codeConvert(self, code):
+        return "双色球" if code == "ssq" else "超级大乐透"
+
+    def codeRevert(self, s):
+        return "ssq" if s == "双色球" else "cjdlt"
+    
+    def gameConvert(self, game):
+        convert = {
+        "single": "单式",
+        "compound": "复式",
+        "complex": "胆拖"
+        }
+        return convert[game]
+
+    def gameRevert(self, s):
+        revert = {
+            "单式": "single",
+            "复式": "compound",
+            "胆拖": "complex"
+        }
+        return revert[s]
+
+    def numbersConvert(self):
+        if self.game_type in ["single", "compound"]:
+            return [" ".join(num[0] + ["+"] + num[1]) for num in self.numbers]
+        else:
+            if self.code == "cjdlt":
+                return [" ".join(num) for num in self.numbers[0]]
+            else:
+                return [" ".join(num) for num in [self.numbers[0][i] for i in [0, 1, 3]]]
+    
+    def hitsConvert(self):
+        if self.game_type in ["single", "compound"]:
+            return ["中" + str(len(hit[0])) + " + " + str(len(hit[1])) for hit in self.hits]
+        else:
+            if self.code == "cjdlt":
+                return ["中" + str(len(hit)) for hit in self.hits[0]]
+            else:
+                return ["中" + str(len(hit)) for hit in [self.hits[0][i] for i in [0, 1, 3]]]
+
+    def toHeaderList(self):
+        if self.game_type in ["single", "compound"]:
+            return self.fixed_headers + list("①②③④⑤⑥⑦⑧⑨⑩")[: len(self.numbers)]
+        else:
+            if self.code == "ssq":
+                return self.fixed_headers + ["红胆", "红拖", "蓝单" if len(self.numbers[0][3]) == 1 else "蓝复"]
+            else:
+                return self.fixed_headers + ["前区胆", "前区拖", "后区胆", "后区拖"]
+    
+    def getData(self, index):
+        row, col = index.row(), index.column()
+        if col == 0:
+            if row == 0:
+                return self.codeConvert(self.code)
+            if row == 1:
+                return self.issue
+            if row == 2:
+                return " ".join(self.winning[0] + ["+"] + self.winning[1]) if self.winning else "点击查询按钮自动获取"
+            if row == 3:
+                return self.gameConvert(self.game_type)
+            return self.numbersConvert()[row - self.fixed_row]
+        elif col == 1 and self.hits and row >= self.fixed_row:
+            return self.hitsConvert()[row - self.fixed_row]
+
+    def setData(self, index, text):
+        row, col = index.row(), index.column()
+        if col != 0:
+            return False    # 第一列以外不能修改
+
+        if row >= len(self.toHeaderList()):
+            return False
+
+        text = text.strip()
+
+        if row == 0:
+            if text in ["超级大乐透", "双色球"]:
+                self.code = self.codeRevert(text)
+                return True
+            return False
+
+        if row == 1:
+            if text.isnumeric():
+                self.issue = text
+                return True
+            return False
+        
+        if row == 2:
+            return False    # 中奖号码不允许修改
+
+        if row == 3:
+            return False    # 玩法不允许修改
+
+        if self.game_type in ["single", "compound"]:
+            splits = text.split("+")
+            if len(splits) != 2:
+                return False
+            s1, s2 = splits
+            s1_, s2_ = s1.split(), s2.split()
+            for s in s1_ + s2_:
+                if not s.isnumeric():
+                    return False
+            self.numbers[row - self.fixed_row] = (s1_, s2_)
+            return True
+        else:
+            splits = text.strip().split()
+            for s in splits:
+                if not s.isnumeric():
+                    return False
+            if self.code == "ssq" and row == 5:
+                target = self.numbers[0][3] # 双色球比大乐透少了一个后区胆
+            else:
+                target = self.numbers[0][row - self.fixed_row]
+            target.clear()  # 号码保存在tuple中，不能直接修改，tuple中的元素是list，可以进行原位修改
+            target.extend(splits)
+            return True
+      
+
+class TableModel(QtCore.QAbstractTableModel):
+    def __init__(self, results, parent=None):
+        super().__init__(parent)
+        self.results = results
+    
+    def data(self, index, role):
+        if role == Qt.ItemDataRole.DisplayRole or role == Qt.ItemDataRole.EditRole:
+            return self.results.getData(index)
+    
+    def rowCount(self, parent=QtCore.QModelIndex()):
+        return len(self.results.toHeaderList())
+
+    def columnCount(self, parent=QtCore.QModelIndex()):
+        return 2
+    
+    def headerData(self, section, orientation, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            if orientation == Qt.Orientation.Vertical:
+                return self.results.toHeaderList()[section]
+            return "" 
+
+    def setData(self, index, value, role):
+        if index.isValid() and role == Qt.ItemDataRole.EditRole:
+            return self.results.setData(index, value)
+        return False
+
+    def flags(self, index):
+        if index.isValid():
+            return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEditable
+        return Qt.ItemFlag.NoItemFlags 
 
    
