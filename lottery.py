@@ -45,12 +45,13 @@ class Lottery:
         self.checker = Checker.from_file(self.cert_, timeout=self.timeout)
 
     def imread(self, img):
-        p = Path(img)
-        if not p.is_file():
-            raise FileNotFoundError()
-        p = str(p.absolute())
-        img = imread(p)  # BGR
-        assert img is not None, 'Cannot read image ' + str(p)
+        if isinstance(img, str):
+            p = Path(img)
+            if not p.is_file():
+                raise FileNotFoundError()
+            p = str(p.absolute())
+            img = imread(p)  # BGR
+            assert img is not None, 'Cannot read image ' + str(p)
         return img
 
     def detect(self, img):
