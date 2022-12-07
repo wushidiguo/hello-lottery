@@ -336,7 +336,7 @@ class Result:
     def numbersWithHitsAndHeader(self):
         if not self.hits:
             return [header + "：" + num for header, num in zip(self.toHeaderList()[self.fixed_row:], self.numbersConvert())]
-        return [header + "：" + num + "\t" + hit for header, num, hit in zip(self.toHeaderList()[self.fixed_row:], self.numbersConvert(), self.hitsConvert())]
+        return [header + "：" + num + " (" + hit + ")" for header, num, hit in zip(self.toHeaderList()[self.fixed_row:], self.numbersConvert(), self.hitsConvert())]
 
     def toHeaderList(self):
         if self.game_type in ["single", "compound"]:
