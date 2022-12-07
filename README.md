@@ -1,5 +1,5 @@
 # hello-lottery
-通过AI快速识别彩票信息，并给出中奖结果。目前支持体彩超级大乐透和福彩双色球两种彩票，支持单式、复式、胆拖玩法。
+彩票OCR项目，通过神经网络识别彩票信息，给出中奖结果。目前支持体彩超级大乐透和福彩双色球，支持单式、复式、胆拖玩法。
 
 ![sample.png](assets/sample.png)
 
@@ -22,7 +22,7 @@ python run.py
 
 **通过命令行使用**
 ```bash
-python lottery.py --image ##.jpg
+python lottery.py ##.jpg
 ```
 可以使用的参数如下：
 ```bash
