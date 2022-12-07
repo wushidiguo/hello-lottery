@@ -133,10 +133,12 @@ if __name__ == "__main__":
     assert opt.image, "Please specify an image containing lottery."
 
     result = l(opt.image, opt.recognition_only)
+
     if not result:
         print("Sorry, something is wrong. You may try again.")
     else:
-        print(*result) if opt.recognition_only else pprint(*result)
+        result = Result.fromTuple(result)
+        print(result)
         
     
 

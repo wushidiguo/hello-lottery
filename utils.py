@@ -258,71 +258,6 @@ def hit_check(numbers, winning_numbers):
     return hits
 
 
-def pprint(code, issue, winning, numbers, hits):
-    '''
-    增加结果打印的可读性。
-    '''
-    print("双色球" if code == "ssq" else "超级大乐透")
-    print("开奖期:", issue)
-
-    convert = {
-        "single" : "单式",
-        "compound" : "复式",
-        "complex" : "胆拖"
-        }
-
-    if code == "ssq":
-        print(f"开奖号码: (红){' '.join(winning[0])} (蓝){' '.join(winning[1])}")
-
-        game_type = numbers["game_type"]
-        print("玩法:", convert[game_type])
-
-        print("识别号码")
-        if game_type in ["single", "compound"]:
-            for num in numbers["numbers"]:
-                print(f"(红){' '.join(num[0])} (蓝){' '.join(num[1])}")
-        else:
-            for num in numbers["numbers"]:
-                print(f"(红胆){' '.join(num[0])}")
-                print(f"(红拖){' '.join(num[1])}")
-                print(f"({'蓝单' if len(num[3] == 1) else '蓝复'}){' '.join(num[3])}")
-        print("命中数")
-        if game_type in ["single", "compound"]:
-            for hit in hits:
-                print(f"(红)中{len(hit[0])} (蓝)中{len(hit[1])}")
-        else:
-            for hit in hits:
-                print(f"(红胆)中{len(hit[0])}")
-                print(f"(红拖)中{len(hit[1])}")
-                print(f"(蓝)中{len(hit[3])}")
-    else:
-        print(f"开奖号码: (前区){' '.join(winning[0])} (后区){' '.join(winning[1])}")
-
-        game_type = numbers["game_type"]
-        print("玩法:", convert[game_type])
-
-        print("识别号码")
-        if game_type in ["single", "compound"]:
-            for num in numbers["numbers"]:
-                print(f"(前区){' '.join(num[0])} (后区){' '.join(num[1])}")
-        else:
-            for num in numbers["numbers"]:
-                print(f"(前区胆){' '.join(num[0])}")
-                print(f"(前区拖){' '.join(num[1])}")
-                print(f"(后区胆){' '.join(num[2])}")
-                print(f"(后区拖){' '.join(num[3])}")
-        print("命中数")
-        if game_type in ["single", "compound"]:
-            for hit in hits:
-                print(f"(前区)中{len(hit[0])} (后区)中{len(hit[1])}")
-        else:
-            for hit in hits:
-                print(f"(前区胆)中{len(hit[0])}")
-                print(f"(前区拖)中{len(hit[1])}")
-                print(f"(后区胆)中{len(hit[2])}")
-                print(f"(后区拖)中{len(hit[3])}")
-
-
 class Result:
     '''
     要允许用户修改识别结果，就要有一个对应的数据结构作为“后台数据”和“前台表格”的桥梁。
@@ -360,6 +295,9 @@ class Result:
 
     def codeRevert(self, s):
         return "ssq" if s == "双色球" else "cjdlt"
+
+    def winningConvert(self, winning):
+        return " ".join(winning[0] + ["+"] + winning[1])
     
     def gameConvert(self, game):
         convert = {
@@ -394,6 +332,11 @@ class Result:
                 return ["中" + str(len(hit)) for hit in self.hits[0]]
             else:
                 return ["中" + str(len(hit)) for hit in [self.hits[0][i] for i in [0, 1, 3]]]
+    
+    def numbersWithHitsAndHeader(self):
+        if not self.hits:
+            return [header + "：" + num for header, num in zip(self.toHeaderList()[self.fixed_row:], self.numbersConvert())]
+        return [header + "：" + num + "\t" + hit for header, num, hit in zip(self.toHeaderList()[self.fixed_row:], self.numbersConvert(), self.hitsConvert())]
 
     def toHeaderList(self):
         if self.game_type in ["single", "compound"]:
@@ -412,7 +355,7 @@ class Result:
             if row == 1:
                 return self.issue
             if row == 2:
-                return " ".join(self.winning[0] + ["+"] + self.winning[1]) if self.winning else "点击查询按钮自动获取"
+                return self.winningConvert(self.winning) if self.winning else "点击查询按钮自动获取"
             if row == 3:
                 return self.gameConvert(self.game_type)
             return self.numbersConvert()[row - self.fixed_row]
@@ -470,8 +413,13 @@ class Result:
             target.clear()  # 号码保存在tuple中，不能直接修改，tuple中的元素是list，可以进行原位修改
             target.extend(splits)
             return True
-      
+    
+    def __str__(self):
+        return f"彩票类型：{self.codeConvert(self.code)}\n" + f"开奖期：{self.issue}\n" \
+            + f"开奖号码：{self.winningConvert(self.winning) if self.winning else '未知'}\n"  \
+            + f"玩法：{self.gameConvert(self.game_type)}\n" + "\n".join(self.numbersWithHitsAndHeader())
 
+     
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, results, parent=None):
         super().__init__(parent)
