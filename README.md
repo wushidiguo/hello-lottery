@@ -5,11 +5,11 @@
 
 或使用手机扫描二维码（无需下载）
 
-![qrcode.png](assets/qrcode.png)
+<img src="assets/qrcode.png" alt="qrcode.png" width="200"/>
 
-运行界面(windows)
+运行界面(Windows)
 
-![sample.png](assets/sample.png)
+<img src="assets/sample.png" alt="sample.png" width="400"/>
 
 ## 运行环境
 测试环境为Windows 11和Ubuntu 20.04，python版本为3.8.10，默认使用GPU加速，纯CPU环境下亦可运行。使用时需要联网获取开奖数据。
