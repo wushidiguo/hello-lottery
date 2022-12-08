@@ -1,6 +1,14 @@
 # hello-lottery
 彩票OCR项目，通过神经网络识别彩票信息，给出中奖结果。目前支持体彩超级大乐透和福彩双色球，支持单式、复式、胆拖玩法。
 
+[点击体验](http://13.231.180.9:7860/)
+
+或使用手机扫描二维码（无需下载）
+
+![qrcode.png](assets/qrcode.png)
+
+运行界面(windows)
+
 ![sample.png](assets/sample.png)
 
 ## 运行环境
