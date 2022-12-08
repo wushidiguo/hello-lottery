@@ -52,7 +52,11 @@ class Lottery:
             p = str(p.absolute())
             img = imread(p)  # BGR
             assert img is not None, 'Cannot read image ' + str(p)
-        return img
+            return img
+        elif isinstance(img, np.ndarray):
+            return img[:, :, ::-1]  # rgb to bgr
+        else:
+            raise TypeError("Please input an image file.")
 
     def detect(self, img):
         detection = self.detector(img)
