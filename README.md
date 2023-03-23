@@ -79,7 +79,7 @@ results = l("##.jpg")
 彩票识别分为两步：
 
 1. 关键信息检测和定位，使用了[yolov7](https://github.com/WongKinYiu/yolov7)的标准模型，训练过程中使用了收集于网上的约200张彩票图像（大乐透和双色球各100张），另外使用了50张图像作为验证集；
-2. 文字ocr，使用了[easyocr](https://github.com/JaidedAI/EasyOCR)提供的模型架构，即VGG+BiLSTM+CTC，使用了约1000张彩票截图数据作为训练集，约250张截图数据作为验证集，同时在每个epoch，加入与真实数据同等数量的人造数据，一同进行训练；人造数据如下：
+2. 文字ocr，使用了[easyocr](https://github.com/JaidedAI/EasyOCR)提供的模型架构，即VGG+BiLSTM+CTC，使用了约1000张彩票截图数据作为训练集，约250张截图数据作为验证集，同时在每个epoch，加入与真实数据同等数量的人造数据，一同进行训练。不同语言、字体混合的文字图片生成，可以参考本人开源的[工具](https://github.com/wushidiguo/TextContainedImageGeneration)；人造数据如下：
 
 ![training_data.png](assets/training_data.png)
 
