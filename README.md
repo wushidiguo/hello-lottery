@@ -2,6 +2,11 @@
 
 彩票OCR项目，通过神经网络识别彩票信息，给出中奖结果。目前支持体彩超级大乐透和福彩双色球，支持单式、复式、胆拖玩法。自动适应各种彩票样式和背景：
 
+[weights下载](https://pan.baidu.com/s/1sBxFLyI3TcOIyVR9DVxYmQ)
+提取码：qquj
+
+新建一个checkouts文件夹，把下载好的weights放进去。
+
 ![styles.png](assets/styles.png)
 
 [点击体验](https://wushidiguo2-hellolottery.hf.space/)
